@@ -1,0 +1,19 @@
+@startuml
+left to right direction
+title Gestionar productos - Crear producto
+
+object "Administrador" as Admin
+object "GestionProductosView\n<<boundary>>" as Vista
+object "ProductoController\n<<control>>" as Control
+object "Producto\n<<entity>>" as Producto
+
+Admin --> Vista : 1: abrirGestionProductos()
+Admin --> Vista : 2: ingresarDatosProducto(datos)
+Vista --> Control : 3: crearProducto(datos)
+Control --> Control : 4: validarDatos(datos)
+Control --> Producto : 5: guardar(datos)
+Producto --> Control : 6: productoCreado
+Control --> Vista : 7: confirmarCreacion()
+Vista --> Admin : 8: mostrarConfirmacion()
+
+@enduml
