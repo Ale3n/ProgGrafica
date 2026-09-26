@@ -14,7 +14,7 @@
 
     <lwjgl.version>3.3.6</lwjgl.version>
 
-    <mainClass>com.grafica.AppZoom</mainClass>
+    <mainClass>com.grafica.App</mainClass>
 
   </properties>
 
