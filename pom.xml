@@ -14,7 +14,7 @@
 
     <lwjgl.version>3.3.6</lwjgl.version>
 
-    <mainClass>com.grafica.App</mainClass>
+    <mainClass>com.grafica.decoracion</mainClass>
 
   </properties>
 

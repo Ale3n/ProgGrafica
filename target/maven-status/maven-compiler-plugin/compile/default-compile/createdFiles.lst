@@ -1,3 +1,7 @@
-com\grafica\AppZoom.class
 com\grafica\App.class
 com\grafica\AppMovimientoTeclado.class
+com\grafica\ciudad.class
+com\grafica\decoracion.class
+com\grafica\AppZoom.class
+com\grafica\auto.class
+com\grafica\iluminacion.class
