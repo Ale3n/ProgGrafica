@@ -10,12 +10,12 @@ import static org.lwjgl.glfw.GLFW.*; // Permite consultar teclas y cambiar el t�
 public class auto extends ciudad {
 
     // ==================== 1. VARIABLES DEL AUTO ====================
-    protected float autoX = -30; // Posición horizontal inicial: centro de una calle.
-    protected float autoZ = 30; // Posición inicial sobre el eje que recorre el fondo de la ciudad.
+    protected float autoX = -50; // Posición horizontal inicial: centro de la avenida suroeste.
+    protected float autoZ = 50; // Posición inicial sobre el eje sur de la ciudad ampliada.
     protected float angulo = 0; // Orientación en radianes; cero apunta hacia -Z.
     protected float velocidad = 0; // Unidades por segundo; un valor negativo significa reversa.
     protected boolean camaraAerea = false; // false: seguir el auto; true: observar toda la ciudad.
-    protected static final float RADIO_AUTO = 1.65f; // Radio que contiene al vehículo para las colisiones.
+    protected static final float RADIO_AUTO = 1f; // Radio que contiene al vehículo para las colisiones.
 
     // ==================== 2. TECLADO Y REINICIO ====================
 
@@ -35,8 +35,8 @@ public class auto extends ciudad {
 
     /** Coloca nuevamente el auto en su punto de partida. */
     protected void reiniciar() {
-        autoX = -30; // Recupera la coordenada X de inicio.
-        autoZ = 30; // Recupera la coordenada Z de inicio.
+        autoX = -50; // Recupera la coordenada X de inicio (avenida suroeste).
+        autoZ = 50; // Recupera la coordenada Z de inicio.
         angulo = 0; // Orienta el frente hacia -Z.
         velocidad = 0; // Detiene cualquier movimiento previo.
     }

@@ -26,18 +26,22 @@ public class ciudad {
     protected int alto = 760; // Alto inicial de la ventana; después contiene píxeles del framebuffer.
     protected float orbita = 0.6f; // Ángulo inicial de la cámara alrededor de la ciudad, en radianes.
     protected boolean vistaMapa = false; // Clase4 lo activa cuando dibuja la vista superior.
-    protected static final float LIMITE = 35; // Distancia del origen a cada borde: el mapa mide 70 unidades.
+    protected static final float LIMITE = 55; // Distancia del origen a cada borde: el mapa mide 110 unidades (11 celdas de 10).
     protected static final float CELDA = 10; // Ancho y profundidad de cada celda del mapa.
     private final Map<String, Integer> uniforms = new HashMap<>(); // Evita buscar repetidamente el mismo uniform.
 
-    protected static final int[][] MAPA = { // Matriz: 0 = calle, 1 = edificio, 2 = parque.
-        {0, 0, 0, 0, 0, 0, 0}, // Fila norte: calle continua.
-        {0, 1, 0, 1, 0, 2, 0}, // Primera fila de manzanas, separadas por calles.
-        {0, 0, 0, 0, 0, 0, 0}, // Segunda avenida horizontal.
-        {0, 2, 0, 1, 0, 1, 0}, // Fila central de manzanas.
-        {0, 0, 0, 0, 0, 0, 0}, // Tercera avenida horizontal.
-        {0, 1, 0, 2, 0, 1, 0}, // Última fila de manzanas.
-        {0, 0, 0, 0, 0, 0, 0} // Calle del borde sur.
+    protected static final int[][] MAPA = { // Matriz 11x11: 0 = calle, 1 = edificio (19 total), 2 = parque (6 total).
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // Fila 0: Avenida perimetral norte.
+        {0, 1, 0, 1, 0, 2, 0, 1, 0, 1, 0}, // Fila 1: Manzanas (4 edificios, 1 parque).
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // Fila 2: Calle horizontal continua.
+        {0, 2, 0, 1, 0, 1, 0, 1, 0, 2, 0}, // Fila 3: Manzanas (3 edificios, 2 parques).
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // Fila 4: Calle horizontal continua.
+        {0, 1, 0, 1, 0, 2, 0, 1, 0, 1, 0}, // Fila 5: Manzanas (4 edificios, 1 parque).
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // Fila 6: Calle horizontal continua.
+        {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0}, // Fila 7: Manzanas (3 edificios, 2 parques).
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // Fila 8: Calle horizontal continua.
+        {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}, // Fila 9: Manzanas (5 edificios, 0 parques).
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}  // Fila 10: Avenida perimetral sur.
     };
 
     // ==================== 2. INICIO, CICLO Y LIMPIEZA ====================
@@ -155,9 +159,9 @@ public class ciudad {
 
     /** Coloca la cámara elevada y orientada hacia el centro de la ciudad. */
     protected void configurarCamara() {
-        float camaraX = (float) Math.sin(orbita) * 65; // Calcula la posición X de una órbita de radio 65.
-        float camaraZ = (float) Math.cos(orbita) * 65; // Calcula la posición Z de esa misma órbita.
-        vector("uOjo", camaraX, 55, camaraZ); // Envía la posición de la cámara a 55 unidades de altura.
+        float camaraX = (float) Math.sin(orbita) * 105; // Calcula la posición X adaptada a la ciudad de 110 unidades.
+        float camaraZ = (float) Math.cos(orbita) * 105; // Calcula la posición Z de esa misma órbita.
+        vector("uOjo", camaraX, 85, camaraZ); // Envía la posición de la cámara a 85 unidades de altura para vista completa.
         vector("uObjetivo", 0, 0, 0); // Apunta la cámara hacia el origen del mundo.
         decimal("uAspecto", (float) ancho / alto); // Envía la proporción de la imagen para evitar deformaciones.
     }
@@ -192,7 +196,7 @@ public class ciudad {
 
     /** Recorre el mapa y transforma cada celda en geometría. */
     protected void escena() {
-        caja(0, -0.25f, 0, 70, 0.5f, 70, 0.16f, 0.19f, 0.23f); // Dibuja la base de asfalto con su cara superior en Y=0.
+        caja(0, -0.25f, 0, 110, 0.5f, 110, 0.16f, 0.19f, 0.23f); // Dibuja la base de asfalto ampliada (110x110) con su cara superior en Y=0.
         for (int fila = 0; fila < MAPA.length; fila++) { // Recorre el mapa de norte a sur.
             for (int columna = 0; columna < MAPA[fila].length; columna++) { // Recorre cada fila de izquierda a derecha.
                 float x = centro(columna); // Convierte la columna a posición X.
@@ -300,8 +304,8 @@ public class ciudad {
                 vNormal = normalize(giro * (aNormal / uEscala)); // Corrige la normal con la inversa transpuesta de escala y giro.
 
                 if (uMapa == 1) { // Esta rama se usa al dibujar el minimapa en clase4.
-                    float pantallaX = vMundo.x / 37.0; // Ajusta el ancho del mundo al intervalo visible -1 a 1.
-                    float pantallaY = -vMundo.z / 37.0; // Coloca el norte (-Z) en la parte superior del mapa.
+                    float pantallaX = vMundo.x / 58.0; // Ajusta el ancho del mundo 11x11 (-55 a 55) al intervalo visible -1 a 1.
+                    float pantallaY = -vMundo.z / 58.0; // Coloca el norte (-Z) en la parte superior del mapa.
                     float profundidad = -vMundo.y / 100.0; // Hace que los objetos más altos se vean por encima.
                     gl_Position = vec4(pantallaX, pantallaY, profundidad, 1.0); // Proyecta sin reducir objetos lejanos.
                 } else { // La escena principal utiliza una cámara con perspectiva.

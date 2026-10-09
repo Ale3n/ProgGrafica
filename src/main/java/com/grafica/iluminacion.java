@@ -12,16 +12,16 @@ public class iluminacion extends auto {
     // ==================== 1. ESTADO Y POSICIONES DE LAS LUCES ====================
     protected boolean noche = true; // Inicia la escena con iluminación nocturna.
     protected boolean faros = true; // Inicia los focos del auto encendidos.
-    protected static final float[][] LUCES = { // Cada fila contiene la posición X, Y, Z de una bombilla.
-        {-24, 4.5f, -24}, // Farola de la manzana noroeste.
-        {-4, 4.5f, -24}, // Farola de la manzana norte central.
-        {16, 4.5f, -24}, // Farola de la manzana noreste.
-        {-24, 4.5f, -4}, // Farola de la manzana oeste central.
-        {-4, 4.5f, -4}, // Farola de la manzana central.
-        {16, 4.5f, -4}, // Farola de la manzana este central.
-        {-24, 4.5f, 16}, // Farola de la manzana suroeste.
-        {-4, 4.5f, 16}, // Farola de la manzana sur central.
-        {16, 4.5f, 16} // Farola de la manzana sureste.
+    protected static final float[][] LUCES = { // Cada fila contiene la posición X, Y, Z de una bombilla distribuida en el mapa 11x11.
+        {-44, 4.5f, -44}, // Farola de la manzana noroeste.
+        {0,   4.5f, -44}, // Farola de la manzana norte central.
+        {44,  4.5f, -44}, // Farola de la manzana noreste.
+        {-44, 4.5f, 0},   // Farola de la manzana oeste central.
+        {0,   4.5f, -3},   // Farola de la manzana central.
+        {44,  4.5f, 0},   // Farola de la manzana este central.
+        {-44, 4.5f, 44},  // Farola de la manzana suroeste.
+        {0,   4.5f, 44},  // Farola de la manzana sur central.
+        {44,  4.5f, 44}   // Farola de la manzana sureste.
     };
 
     // ==================== 2. CONTROLES E INDICADORES ====================

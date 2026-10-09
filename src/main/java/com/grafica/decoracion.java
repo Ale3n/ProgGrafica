@@ -15,10 +15,10 @@ public class decoracion extends iluminacion {
     private boolean mostrarMapa = true; // Muestra el minimapa desde el inicio.
     private int entregas = 0; // Cuenta las entregas completadas; también identifica el siguiente destino.
     private float tiempo = 0; // Acumula los segundos de la partida hasta completar el recorrido.
-    private static final float[][] DESTINOS = { // Cada fila contiene X y Z de una parada sobre la calle.
-        {30, -30}, // Primera entrega: esquina noreste.
-        {-30, -30}, // Segunda entrega: esquina noroeste.
-        {-30, 30} // Tercera entrega: regreso al punto inicial.
+    private static final float[][] DESTINOS = { // Cada fila contiene X y Z de una parada sobre la calle en el mapa 11x11.
+        {50, -50}, // Primera entrega: esquina noreste.
+        {-50, -50}, // Segunda entrega: esquina noroeste.
+        {-50, 50} // Tercera entrega: regreso a la esquina suroeste (punto inicial).
     };
 
     // ==================== 2. CONTROLES Y REINICIO ====================
@@ -118,7 +118,7 @@ public class decoracion extends iluminacion {
                     dibujarVentanas(x, z, altura); // Coloca ventanas en sus cuatro fachadas.
                 }
                 if (tipo != 0) { // La señalización se coloca junto a las manzanas, no en celdas de calle.
-                    dibujarPasoPeatonal(x, z); // Añade el cruce pintado sobre la calle contigua.
+                    dibujarPasoPeatonal(x, z, fila,columna); // Añade el cruce conectando ambas aceras contiguas.
                     dibujarSemaforo(x + 4, z - 4); // Coloca el semáforo dentro de la acera.
                 }
             }
@@ -157,10 +157,22 @@ public class decoracion extends iluminacion {
         entero("uEmision", 0); // Restablece la iluminación normal de los demás elementos.
     }
 
-    /** Dibuja las franjas blancas sobre la calle contigua al norte de la manzana. */
-    private void dibujarPasoPeatonal(float x, float z) {
-        for (int desplazamiento = -3; desplazamiento <= 3; desplazamiento++) { // Coloca siete franjas paralelas.
-            caja(x + desplazamiento, 0.045f, z - 8, 0.45f, 0.04f, 2, 0.85f, 0.87f, 0.83f); // Eleva la pintura un poco sobre el suelo.
+    /** Dibuja las franjas blancas del paso peatonal conectando de una acera a la acera de enfrente. */
+    /** Paso de cebra: franjas paralelas a la calle, de una acera a la acera de enfrente. */
+    private void dibujarPasoPeatonal(float x, float z, int fila, int columna) {
+        // Calle al sur de la manzana, solo si al otro lado hay otra manzana con acera.
+        if (fila + 2 < MAPA.length && MAPA[fila + 2][columna] != 0) {
+            for (int i = 0; i < 8; i++) { // 8 franjas de 0.6 con huecos de 0.6
+                float franjaZ = (z + 10) - 4.2f + i * 1.2f;
+                caja(x + 2.5f, 0.035f, franjaZ, 4, 0.02f, 0.6f, 0.9f, 0.9f, 0.9f);
+            }
+        }
+        // Calle al este, con la misma regla; aquí las franjas van a lo largo de Z.
+        if (columna + 2 < MAPA[fila].length && MAPA[fila][columna + 2] != 0) {
+            for (int i = 0; i < 8; i++) {
+                float franjaX = (x + 10) - 4.2f + i * 1.2f;
+                caja(franjaX, 0.035f, z+2.5f, 0.6f, 0.02f, 4, 0.9f, 0.9f, 0.9f);
+            }
         }
     }
 
