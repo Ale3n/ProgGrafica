@@ -9,11 +9,8 @@ import static org.lwjgl.glfw.GLFW.*; // Importa las funciones y constantes de ve
 import static org.lwjgl.opengl.GL33.*; // Importa las funciones OpenGL hasta la versión 3.3.
 
 /**
- * CLASE 1: CREAR LA CIUDAD.
- * Sigue el flujo de los ejemplos: iniciar, loop, dibujar y limpiar.
- * Coordenadas: X = izquierda/derecha; Y = altura; Z = profundidad.
- * Las clases siguientes reutilizan esta base mediante extends y super.
- * Los comentarios explican las instrucciones; las llaves solo delimitan bloques.
+ *  CREAR LA CIUDAD.
+ * 
  */
 public class ciudad {
 
@@ -186,6 +183,8 @@ public class ciudad {
         glUseProgram(programa); // Activa los shaders de esta etapa.
         glBindVertexArray(vao); // Selecciona los atributos del cubo compartido.
         entero("uMapa", 0); // Selecciona perspectiva normal, no la proyección del minimapa.
+        entero("uUI", 0); // Desactiva modo de interfaz 2D.
+        decimal("uAlpha", 1.0f); // Opacidad completa por defecto.
         configurarCamara(); // Actualiza la posición y el objetivo de la cámara.
         prepararLuces(); // Envía iluminación si la etapa actual la implementa.
         escena(); // Dibuja la ciudad y las ampliaciones de la lección actual.
@@ -213,7 +212,7 @@ public class ciudad {
                         caja(x, altura / 2 + 0.3f, z, 7, altura, 7, rojo, 0.40f, azul); // Coloca la base del edificio sobre la acera.
                         caja(x, altura + 0.45f, z, 7.3f, 0.3f, 7.3f, 0.20f, 0.26f, 0.32f); // Añade una cubierta más ancha y oscura.
                     } else { // El tipo 2 representa un parque.
-                        caja(x, 0.32f, z, 9, 0.1f, 9, 0.20f, 0.45f, 0.28f); // Cubre la parcela con césped verde.
+                        caja(x, 0.32f, z, 9, 0.1f, 9, 0.0f, 0.294f, 0.0f); // Cubre la parcela con césped verde.
                     }
                 }
             }
@@ -222,14 +221,18 @@ public class ciudad {
 
     /** Dibuja las líneas discontinuas de las calles dejando los cruces despejados. */
     private void dibujarMarcasCalle(int fila, int columna, float x, float z) {
+        float grosor = vistaMapa ? 0.90f : 0.13f; // En el minimapa usa trazo de ~2px para que la GPU no lo descarte por muestreo subpíxel.
+        float alturaY = vistaMapa ? 0.05f : 0.025f; // Mayor elevación para evitar Z-fighting con el asfalto.
+        float largo = vistaMapa ? 2.2f : 1.6f;
+
         if (fila % 2 == 0 && columna % 2 == 1) { // Identifica un tramo horizontal situado entre cruces.
             for (int desplazamiento = -3; desplazamiento <= 3; desplazamiento += 3) { // Coloca tres marcas en la celda.
-                caja(x + desplazamiento, 0.025f, z, 1.6f, 0.03f, 0.13f, 1, 0.84f, 0.35f); // Dibuja una línea alargada en X.
+                caja(x + desplazamiento, alturaY, z, largo, 0.03f, grosor, 1, 0.84f, 0.35f); // Dibuja una línea alargada en X.
             }
         }
         if (columna % 2 == 0 && fila % 2 == 1) { // Identifica un tramo vertical situado entre cruces.
             for (int desplazamiento = -3; desplazamiento <= 3; desplazamiento += 3) { // Repite las marcas sobre ese tramo.
-                caja(x, 0.025f, z + desplazamiento, 0.13f, 0.03f, 1.6f, 1, 0.84f, 0.35f); // Dibuja una línea alargada en Z.
+                caja(x, alturaY, z + desplazamiento, grosor, 0.03f, largo, 1, 0.84f, 0.35f); // Dibuja una línea alargada en Z.
             }
         }
     }
@@ -248,6 +251,18 @@ public class ciudad {
         vector("uColor", r, g, b); // Envía las intensidades roja, verde y azul del material.
         decimal("uGiro", angulo); // Envía la orientación en radianes.
         glDrawArrays(GL_TRIANGLES, 0, 36); // Dibuja 12 triángulos: dos por cada una de las seis caras.
+    }
+
+    /** Dibuja un rectángulo en 2D en coordenadas de pantalla normalizadas (-1 a 1). */
+    protected void rect2D(float x, float y, float w, float h, float r, float g, float b, float a) {
+        entero("uUI", 1); // Activa la proyección 2D directa en el shader.
+        decimal("uAlpha", a); // Envía el nivel de opacidad (transparencia).
+        vector("uPos", x, y, 0); // Ubicación central en pantalla (X, Y).
+        vector("uEscala", w, h, 1); // Ancho y alto del rectángulo.
+        vector("uColor", r, g, b); // Color base del elemento visual.
+        glDrawArrays(GL_TRIANGLES, 0, 36); // Renderiza los vértices.
+        entero("uUI", 0); // Restablece modo 3D.
+        decimal("uAlpha", 1.0f); // Restablece opacidad completa.
     }
 
     /** Busca un uniform una vez y guarda su ubicación para los siguientes dibujos. */
@@ -289,10 +304,18 @@ public class ciudad {
             uniform float uGiro; // Recibe el giro del objeto alrededor de Y.
             uniform float uAspecto; // Recibe la relación ancho/alto de la imagen.
             uniform int uMapa; // Selecciona perspectiva (0) o vista superior ortográfica (1).
+            uniform int uUI; // Selecciona interfaz 2D directa (1).
             out vec3 vMundo; // Envía la posición mundial al shader de fragmentos.
             out vec3 vNormal; // Envía la normal transformada para la iluminación de clase3.
 
             void main() { // OpenGL ejecuta este bloque una vez por vértice.
+                if (uUI == 1) { // Dibuja interfaz 2D directamente en pantalla NDC (-1 a 1).
+                    gl_Position = vec4(aPos.x * uEscala.x + uPos.x, aPos.y * uEscala.y + uPos.y, 0.0, 1.0);
+                    vMundo = uPos;
+                    vNormal = vec3(0.0, 0.0, 1.0);
+                    return;
+                }
+
                 float coseno = cos(uGiro); // Calcula el coseno del giro del objeto.
                 float seno = sin(uGiro); // Calcula el seno del mismo giro.
                 mat3 giro = mat3( // Construye la matriz de rotación; GLSL recibe sus columnas.
@@ -334,9 +357,12 @@ public class ciudad {
         return """
             #version 330 core // Indica la versión del lenguaje del shader.
             uniform vec3 uColor; // Recibe el color RGB enviado por cajaGirada().
+            uniform float uAlpha; // Recibe el nivel de opacidad.
+            uniform int uUI; // Vale 1 al dibujar la interfaz.
             out vec4 color; // Define el color final que se escribe en la imagen.
             void main() { // Se ejecuta para cada fragmento de la geometría dibujada.
-                color = vec4(uColor, 1.0); // Copia el material y establece opacidad completa.
+                float opacidad = (uUI == 1) ? uAlpha : 1.0;
+                color = vec4(uColor, opacidad); // Copia el material y establece opacidad.
             }
             """; // Termina la cadena del shader de fragmentos.
     }

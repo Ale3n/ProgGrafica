@@ -3,9 +3,8 @@ package com.grafica; // Agrupa las cuatro lecciones dentro del mismo paquete.
 import static org.lwjgl.glfw.GLFW.*; // Permite consultar teclas y cambiar el título de la ventana.
 
 /**
- * CLASE 2: CREACIÓN Y MOVIMIENTO DEL AUTO.
- * Hereda la ciudad de clase1 y agrega únicamente lo necesario para conducir.
- * Orden de lectura: variables, teclado, movimiento, colisiones, cámara y dibujo.
+ *  CREACIÓN Y MOVIMIENTO DEL AUTO.
+ * 
  */
 public class auto extends ciudad {
 
@@ -16,6 +15,7 @@ public class auto extends ciudad {
     protected float velocidad = 0; // Unidades por segundo; un valor negativo significa reversa.
     protected boolean camaraAerea = false; // false: seguir el auto; true: observar toda la ciudad.
     protected static final float RADIO_AUTO = 1f; // Radio que contiene al vehículo para las colisiones.
+    protected boolean pausa = false; // true: congela la simulación y muestra menú de ayuda.
 
     // ==================== 2. TECLADO Y REINICIO ====================
 
@@ -26,6 +26,10 @@ public class auto extends ciudad {
 
         if (key == GLFW_KEY_C) { // Comprueba si se presionó la tecla de cámara.
             camaraAerea = !camaraAerea; // Invierte el modo de cámara actual.
+        }
+
+        if (key == GLFW_KEY_P) { // Comprueba si se pulsó la tecla de pausa/menú.
+            pausa = !pausa; // Alterna la pausa y el menú de ayuda.
         }
 
         if (key == GLFW_KEY_R) { // Comprueba si el usuario quiere comenzar de nuevo.
@@ -46,6 +50,11 @@ public class auto extends ciudad {
     /** Actualiza la conducción; deltaTime contiene los segundos transcurridos entre cuadros. */
     @Override // Cambia la cámara orbital de clase1 por el control del vehículo.
     protected void actualizar(float deltaTime) {
+        if (pausa) { // Si el juego está en pausa, no actualiza la física ni la posición.
+            actualizarTitulo(); // Mantiene la barra de título actualizada.
+            return;
+        }
+
         float acelerador = 0; // Sin teclas pulsadas no se aplica aceleración del motor.
 
         if (pulsada(GLFW_KEY_W) || pulsada(GLFW_KEY_UP)) { // Acepta W o flecha arriba para avanzar.
@@ -56,7 +65,7 @@ public class auto extends ciudad {
             acelerador -= 1; // Primero reduce la velocidad positiva y después entra en reversa.
         }
 
-        velocidad += acelerador * 9 * deltaTime; // Integra la aceleración de 9 unidades por segundo cuadrado.
+        velocidad += acelerador * 12 * deltaTime; // Integra la aceleración de 9 unidades por segundo cuadrado.
         float resistencia = 0.7f; // Define la pérdida de velocidad normal al rodar.
 
         if (pulsada(GLFW_KEY_SPACE)) { // Detecta si el usuario mantiene presionado el freno.
@@ -96,8 +105,11 @@ public class auto extends ciudad {
     private void actualizarTitulo() {
         int kilometrosPorHora = Math.round(Math.abs(velocidad) * 3.6f); // Convierte m/s a km/h y redondea.
         String titulo = getClass().getSimpleName(); // Obtiene el nombre de la etapa que se está ejecutando.
+        if (pausa) {
+            titulo += " [PAUSA ACTIVA | P: reanudar]";
+        }
         titulo += " | WASD/flechas: conducir | Espacio: freno"; // Añade los controles del vehículo.
-        titulo += " | C: camara | R: reiniciar | "; // Añade los controles de cámara y reinicio.
+        titulo += " | C: camara | P: pausa | R: reiniciar | "; // Añade los controles de cámara y reinicio.
         titulo += kilometrosPorHora + " km/h"; // Añade la magnitud de la velocidad.
         titulo += estadoExtra(); // Permite a clase3 y clase4 añadir luces y entregas.
         glfwSetWindowTitle(ventana, titulo); // Publica el texto en la barra superior de la ventana.

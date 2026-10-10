@@ -1,11 +1,10 @@
-package com.grafica; // Mantiene esta lección junto a las clases anteriores.
+package com.grafica; 
 
-import static org.lwjgl.glfw.GLFW.*; // Incluye las constantes de las teclas N y F.
+import static org.lwjgl.glfw.GLFW.*; 
 
 /**
- * CLASE 3: ILUMINACIÓN DE LA CIUDAD.
- * Conserva ciudad y conducción; añade sol, farolas y focos del vehículo.
- * El shader calcula iluminación local: este ejemplo todavía no proyecta sombras.
+ *  ILUMINACIÓN DE LA CIUDAD.
+ * 
  */
 public class iluminacion extends auto {
 
@@ -15,7 +14,7 @@ public class iluminacion extends auto {
     protected static final float[][] LUCES = { // Cada fila contiene la posición X, Y, Z de una bombilla distribuida en el mapa 11x11.
         {-44, 4.5f, -44}, // Farola de la manzana noroeste.
         {0,   4.5f, -44}, // Farola de la manzana norte central.
-        {44,  4.5f, -44}, // Farola de la manzana noreste.
+        {40,  4.5f, -44.5f}, // Farola de la manzana noreste.
         {-44, 4.5f, 0},   // Farola de la manzana oeste central.
         {0,   4.5f, -3},   // Farola de la manzana central.
         {44,  4.5f, 0},   // Farola de la manzana este central.
@@ -66,6 +65,8 @@ public class iluminacion extends auto {
             entero("uFaros", 1); // Activa el cálculo de los dos focos en el shader.
         }
         entero("uEmision", 0); // Hace que los objetos normales reciban iluminación.
+        entero("uUI", 0); // Desactiva modo de interfaz por defecto.
+        decimal("uAlpha", 1.0f); // Opacidad completa por defecto.
 
         for (int indice = 0; indice < LUCES.length; indice++) { // Recorre las nueve bombillas.
             float x = LUCES[indice][0]; // Lee la coordenada horizontal de la bombilla.
@@ -116,9 +117,16 @@ public class iluminacion extends auto {
             uniform int uFaros; // Vale 1 cuando los focos están encendidos.
             uniform int uEmision; // Vale 1 si el objeto debe conservar su color sin oscurecerse.
             uniform int uMapa; // Vale 1 durante el dibujo del minimapa de clase4.
+            uniform int uUI; // Vale 1 al dibujar la interfaz HUD 2D.
+            uniform float uAlpha; // Define la opacidad para transparencias.
             out vec4 color; // Entrega el color RGBA final al framebuffer.
 
             void main() { // Se ejecuta para cada fragmento visible de una caja.
+                if (uUI == 1) { // La interfaz 2D usa color directo y canal alfa para glassmorphism.
+                    color = vec4(uColor, uAlpha);
+                    return;
+                }
+
                 if (uEmision == 1 || uMapa == 1) { // Bombillas y minimapa usan colores directos.
                     color = vec4(uColor, 1.0); // Conserva el color base con opacidad completa.
                     return; // Termina el shader sin calcular iluminación.
