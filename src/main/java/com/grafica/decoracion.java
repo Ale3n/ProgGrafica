@@ -352,11 +352,14 @@ public class decoracion extends iluminacion {
             dibujarTexto(noche ? "NOCHE" : "DIA", -0.59f, -0.81f, 0.022f, 0.82f, 0.87f, 0.94f);
 
             dibujarTexto("ENTREGAS", -0.93f, -0.90f, 0.020f, 0.72f, 0.80f, 0.86f);
-            for (int indice = 0; indice < 3; indice++) {
+            int totalDestinos = Math.max(1, DESTINOS.length);
+            float espacio = totalDestinos > 1 ? Math.min(0.075f, 0.18f / (totalDestinos - 1)) : 0.075f;
+            float anchoBloque = Math.min(0.052f, espacio * 0.72f);
+            for (int indice = 0; indice < totalDestinos; indice++) {
                 float colorR = indice < entregas ? 0.18f : (indice == entregas ? 1.0f : 0.25f);
                 float colorG = indice < entregas ? 0.88f : (indice == entregas ? 0.72f : 0.28f);
                 float colorB = indice < entregas ? 0.35f : (indice == entregas ? 0.15f : 0.32f);
-                rect2D(-0.57f + indice * 0.075f, -0.895f, 0.052f, 0.025f,
+                rect2D(-0.57f + indice * espacio, -0.895f, anchoBloque, 0.025f,
                     colorR, colorG, colorB, indice < entregas + 1 ? 0.95f : 0.60f);
             }
 
