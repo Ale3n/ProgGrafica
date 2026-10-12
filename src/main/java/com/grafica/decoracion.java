@@ -401,7 +401,7 @@ public class decoracion extends iluminacion {
         dibujarTexto(accion, -0.045f, y - 0.012f, 0.022f, 0.84f, 0.89f, 0.94f);
     }
 
-    /** Renderiza texto compacto con glifos 3x5 para no depender de una biblioteca externa. */
+    /**Renderiza texto compacto con glifos 3x5 para no depender de una biblioteca externa. */
     private void dibujarTexto(String texto, float x, float y, float altoTexto, float r, float g, float b) {
         float altoCelda = altoTexto / 5.0f;
         float anchoCelda = altoCelda * (float) alto / ancho;
