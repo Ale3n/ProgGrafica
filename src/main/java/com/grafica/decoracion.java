@@ -18,6 +18,7 @@ public class decoracion extends iluminacion {
         {-50, -50}, // Segunda entrega: esquina noroeste.
         {-50, 50} // Tercera entrega: regreso a la esquina suroeste (punto inicial).
     };
+    private static final float CARRIL_DERECHO = 2.2f; // Separación del centro para circular por el carril derecho.
 
     // ==================== TRÁFICO AUTÓNOMO (MEJORA OPCIONAL) ====================
 
@@ -168,10 +169,12 @@ public class decoracion extends iluminacion {
         }
     }
 
-    /** Dibuja los vehículos de tráfico autónomo en la ciudad 3D. */
+    /** Dibuja los vehículos de tráfico autónomo en la ciudad 3D desplazados al carril derecho. */
     private void dibujarTrafico() {
         for (VehiculoAutonomo v : trafico) {
-            dibujarModeloVehiculo(v.x, v.z, v.angulo, v.colorR, v.colorG, v.colorB, v.cabR, v.cabG, v.cabB);
+            float offsetX = (float) Math.cos(v.angulo) * CARRIL_DERECHO;
+            float offsetZ = -(float) Math.sin(v.angulo) * CARRIL_DERECHO;
+            dibujarModeloVehiculo(v.x + offsetX, v.z + offsetZ, v.angulo, v.colorR, v.colorG, v.colorB, v.cabR, v.cabG, v.cabB);
         }
     }
 
@@ -345,9 +348,11 @@ public class decoracion extends iluminacion {
         float puntaZ = autoZ + frenteZ * 2; // Desplaza la punta dos unidades hacia delante en Z.
         caja(puntaX, 26, puntaZ, 0.9f, 0.1f, 0.9f, 1, 1, 1); // Dibuja la punta blanca encima del indicador cian.
 
-        // Representa los vehículos autónomos en el minimapa con sus respectivos colores
+        // Representa los vehículos autónomos en el minimapa con sus respectivos colores en el carril derecho
         for (VehiculoAutonomo v : trafico) {
-            cajaGirada(v.x, 24, v.z, 2.0f, 0.1f, 2.8f, v.colorR, v.colorG, v.colorB, v.angulo);
+            float offsetX = (float) Math.cos(v.angulo) * CARRIL_DERECHO;
+            float offsetZ = -(float) Math.sin(v.angulo) * CARRIL_DERECHO;
+            cajaGirada(v.x + offsetX, 24, v.z + offsetZ, 2.0f, 0.1f, 2.8f, v.colorR, v.colorG, v.colorB, v.angulo);
         }
     }
 
