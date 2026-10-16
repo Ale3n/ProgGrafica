@@ -18,6 +18,78 @@ public class decoracion extends iluminacion {
         {-50, -50}, // Segunda entrega: esquina noroeste.
         {-50, 50} // Tercera entrega: regreso a la esquina suroeste (punto inicial).
     };
+    private static final float CARRIL_DERECHO = 2.2f; // Separación del centro para circular por el carril derecho.
+
+    // ==================== TRÁFICO AUTÓNOMO (MEJORA OPCIONAL) ====================
+
+    /** Vehículo autónomo con posición, orientación, velocidad constante y circuito de calles. */
+    protected static class VehiculoAutonomo {
+        float x;
+        float z;
+        float angulo;
+        float velocidad;
+        float colorR, colorG, colorB;
+        float cabR, cabG, cabB;
+        float[][] ruta;
+        int objetivoIdx;
+
+        VehiculoAutonomo(float[][] ruta, float velocidad, float r, float g, float b, float cr, float cg, float cb) {
+            this.ruta = ruta;
+            this.velocidad = velocidad;
+            this.colorR = r; this.colorG = g; this.colorB = b;
+            this.cabR = cr; this.cabG = cg; this.cabB = cb;
+            reiniciar();
+        }
+
+        void reiniciar() {
+            this.x = ruta[0][0];
+            this.z = ruta[0][1];
+            this.objetivoIdx = 1;
+            apuntarHaciaObjetivo();
+        }
+
+        private void apuntarHaciaObjetivo() {
+            float dx = ruta[objetivoIdx][0] - x;
+            float dz = ruta[objetivoIdx][1] - z;
+            this.angulo = (float) Math.atan2(-dx, -dz);
+        }
+
+        void actualizar(float deltaTime) {
+            float destX = ruta[objetivoIdx][0];
+            float destZ = ruta[objetivoIdx][1];
+            float dx = destX - x;
+            float dz = destZ - z;
+            float distancia = (float) Math.hypot(dx, dz);
+
+            if (distancia < 0.8f) { // Llegó a la esquina: pasar al siguiente tramo
+                x = destX;
+                z = destZ;
+                objetivoIdx = (objetivoIdx + 1) % ruta.length;
+                apuntarHaciaObjetivo();
+            } else {
+                // Rotación suave hacia el rumbo de la calle
+                float anguloDeseado = (float) Math.atan2(-dx, -dz);
+                float difAngulo = (float) Math.atan2(Math.sin(anguloDeseado - angulo), Math.cos(anguloDeseado - angulo));
+                angulo += difAngulo * Math.min(1.0f, 6.0f * deltaTime);
+
+                // Avance continuo a lo largo de la calzada
+                float frenteX = -(float) Math.sin(angulo);
+                float frenteZ = -(float) Math.cos(angulo);
+                x += frenteX * velocidad * deltaTime;
+                z += frenteZ * velocidad * deltaTime;
+            }
+        }
+    }
+
+    /** Tres vehículos autónomos que patrullan circuitos de calles independientes en la ciudad. */
+    private final VehiculoAutonomo[] trafico = {
+        // 1. Taxi amarillo: Circuito por avenidas del sector norte (-30 a 30 en X, -50 a -10 en Z)
+        new VehiculoAutonomo(new float[][]{ {-30, -50}, {30, -50}, {30, -10}, {-30, -10} }, 8.5f, 0.96f, 0.85f, 0.12f, 0.18f, 0.22f, 0.28f),
+        // 2. Patrullero azul: Anillo central de la ciudad (-10 a 10 en X, -30 a 30 en Z)
+        new VehiculoAutonomo(new float[][]{ {-10, -30}, {10, -30}, {10, 30}, {-10, 30} }, 9.0f, 0.12f, 0.48f, 0.95f, 0.88f, 0.90f, 0.95f),
+        // 3. SUV verde: Circuito por las avenidas perimetrales del sector sur (-50 a 50 en X, 10 a 50 en Z)
+        new VehiculoAutonomo(new float[][]{ {-50, 10}, {50, 10}, {50, 50}, {-50, 50} }, 8.0f, 0.14f, 0.78f, 0.38f, 0.12f, 0.16f, 0.20f)
+    };
 
     // ==================== 2. CONTROLES Y REINICIO ====================
 
@@ -36,6 +108,9 @@ public class decoracion extends iluminacion {
         super.reiniciar(); // Restaura posición, velocidad y orientación del vehículo.
         entregas = 0; // Vuelve a seleccionar la primera parada.
         tiempo = 0; // Reinicia el cronómetro de la partida.
+        for (VehiculoAutonomo v : trafico) {
+            v.reiniciar(); // Restablece los vehículos autónomos a sus puntos de partida.
+        }
     }
 
     // ==================== 3. REGLAS DE LAS ENTREGAS ====================
@@ -45,7 +120,10 @@ public class decoracion extends iluminacion {
     protected void actualizar(float deltaTime) {
         super.actualizar(deltaTime); // Procesa aceleración, giro, colisiones y título de la ventana.
         if (pausa) {
-            return; // No procesa entregas ni incrementa cronómetro si la pausa está activa.
+            return; // No procesa entregas ni tráfico si la pausa está activa.
+        }
+        for (VehiculoAutonomo v : trafico) {
+            v.actualizar(deltaTime); // Actualiza la posición y giro del tráfico autónomo.
         }
         if (entregas >= DESTINOS.length) { // Comprueba si ya se completaron todas las paradas.
             return; // Conserva el tiempo final y evita leer fuera del arreglo.
@@ -81,12 +159,22 @@ public class decoracion extends iluminacion {
     @Override // Amplía el dibujo acumulado de las tres etapas anteriores.
     protected void escena() {
         super.escena(); // Dibuja la ciudad, el auto y las farolas.
+        dibujarTrafico(); // Dibuja los vehículos de tráfico autónomo con sus colores.
         if (!vistaMapa) { // Los detalles pequeños solo son necesarios en la vista principal.
             decorarCiudad(); // Añade árboles, bancos, ventanas y señalización urbana.
             dibujarSenalizacion(); // Añade carteles viales y nombres de sectores.
         }
         if (entregas < DESTINOS.length) { // Dibuja un objetivo únicamente mientras queden entregas.
             dibujarDestino(); // Coloca la marca dorada en la parada activa.
+        }
+    }
+
+    /** Dibuja los vehículos de tráfico autónomo en la ciudad 3D desplazados al carril derecho. */
+    private void dibujarTrafico() {
+        for (VehiculoAutonomo v : trafico) {
+            float offsetX = (float) Math.cos(v.angulo) * CARRIL_DERECHO;
+            float offsetZ = -(float) Math.sin(v.angulo) * CARRIL_DERECHO;
+            dibujarModeloVehiculo(v.x + offsetX, v.z + offsetZ, v.angulo, v.colorR, v.colorG, v.colorB, v.cabR, v.cabG, v.cabB);
         }
     }
 
@@ -259,6 +347,13 @@ public class decoracion extends iluminacion {
         float puntaX = autoX + frenteX * 2; // Desplaza la punta dos unidades hacia delante en X.
         float puntaZ = autoZ + frenteZ * 2; // Desplaza la punta dos unidades hacia delante en Z.
         caja(puntaX, 26, puntaZ, 0.9f, 0.1f, 0.9f, 1, 1, 1); // Dibuja la punta blanca encima del indicador cian.
+
+        // Representa los vehículos autónomos en el minimapa con sus respectivos colores en el carril derecho
+        for (VehiculoAutonomo v : trafico) {
+            float offsetX = (float) Math.cos(v.angulo) * CARRIL_DERECHO;
+            float offsetZ = -(float) Math.sin(v.angulo) * CARRIL_DERECHO;
+            cajaGirada(v.x + offsetX, 24, v.z + offsetZ, 2.0f, 0.1f, 2.8f, v.colorR, v.colorG, v.colorB, v.angulo);
+        }
     }
 
     // ==================== 7. SEÑALIZACIÓN URBANA Y PÓRTICOS ====================

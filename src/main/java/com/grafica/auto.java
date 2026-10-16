@@ -179,33 +179,43 @@ public class auto extends ciudad {
         dibujarAuto(); // Añade el modelo del vehículo sobre la ciudad.
     }
 
-    /** Construye el auto con cajas; argumentos: posición XYZ, tamaño XYZ y color RGB. */
+    /** Construye el auto del jugador con carrocería roja y cabina azulada. */
     protected void dibujarAuto() {
-        pieza(0, 0.65f, 0, 1.65f, 0.55f, 2.6f, 0.95f, 0.24f, 0.12f); // Dibuja la carrocería roja.
-        pieza(0, 1.12f, 0.12f, 1.3f, 0.55f, 1.25f, 0.22f, 0.65f, 0.78f); // Dibuja la cabina azulada.
-        float[] ladosRuedas = {-0.88f, 0.88f}; // Ubica ruedas a izquierda y derecha del auto.
-        float[] ejesRuedas = {-0.82f, 0.82f}; // Ubica las ruedas delanteras y traseras.
+        dibujarModeloVehiculo(autoX, autoZ, angulo, 0.95f, 0.24f, 0.12f, 0.22f, 0.65f, 0.78f);
+    }
 
-        for (float x : ladosRuedas) { // Selecciona uno de los dos lados del vehículo.
-            for (float z : ejesRuedas) { // Selecciona el eje delantero o trasero.
-                pieza(x, 0.38f, z, 0.24f, 0.58f, 0.6f, 0.055f, 0.065f, 0.08f); // Dibuja una rueda oscura.
+    /** Construye un modelo completo de vehículo con posición, orientación y colores configurables. */
+    protected void dibujarModeloVehiculo(float px, float pz, float pang, float r, float g, float b, float cr, float cg, float cb) {
+        piezaEn(px, pz, pang, 0, 0.65f, 0, 1.65f, 0.55f, 2.6f, r, g, b); // Carrocería
+        piezaEn(px, pz, pang, 0, 1.12f, 0.12f, 1.3f, 0.55f, 1.25f, cr, cg, cb); // Cabina
+        float[] ladosRuedas = {-0.88f, 0.88f}; // Lados izquierdo y derecho
+        float[] ejesRuedas = {-0.82f, 0.82f}; // Ejes delantero y trasero
+
+        for (float x : ladosRuedas) {
+            for (float z : ejesRuedas) {
+                piezaEn(px, pz, pang, x, 0.38f, z, 0.24f, 0.58f, 0.6f, 0.055f, 0.065f, 0.08f); // Ruedas
             }
         }
 
-        float[] ladosFaros = {-0.55f, 0.55f}; // Define la separación lateral de las luces.
-        for (float x : ladosFaros) { // Repite el dibujo para ambos lados.
-            pieza(x, 0.68f, -1.32f, 0.38f, 0.2f, 0.07f, 1, 0.95f, 0.65f); // Dibuja un faro delantero claro.
-            pieza(x, 0.68f, 1.32f, 0.35f, 0.17f, 0.07f, 0.85f, 0.05f, 0.05f); // Dibuja una luz trasera roja.
+        float[] ladosFaros = {-0.55f, 0.55f};
+        for (float x : ladosFaros) {
+            piezaEn(px, pz, pang, x, 0.68f, -1.32f, 0.38f, 0.2f, 0.07f, 1, 0.95f, 0.65f); // Faro delantero
+            piezaEn(px, pz, pang, x, 0.68f, 1.32f, 0.35f, 0.17f, 0.07f, 0.85f, 0.05f, 0.05f); // Luz trasera
         }
     }
 
-    /** Transforma una pieza del espacio local del auto al espacio de la ciudad. */
+    /** Transforma una pieza del espacio local del auto al espacio de la ciudad (para compatibilidad). */
     protected void pieza(float x, float y, float z, float sx, float sy, float sz, float r, float g, float b) {
-        float coseno = (float) Math.cos(angulo); // Calcula el coseno de la orientación del auto.
-        float seno = (float) Math.sin(angulo); // Calcula el seno de la misma orientación.
-        float mundoX = autoX + coseno * x + seno * z; // Gira la posición local y suma la posición X del auto.
-        float mundoZ = autoZ - seno * x + coseno * z; // Gira la posición local y suma la posición Z del auto.
-        cajaGirada(mundoX, y, mundoZ, sx, sy, sz, r, g, b, angulo); // Dibuja la pieza con la orientación del vehículo.
+        piezaEn(autoX, autoZ, angulo, x, y, z, sx, sy, sz, r, g, b);
+    }
+
+    /** Transforma una pieza en cualquier posición y ángulo hacia el espacio de la ciudad. */
+    protected void piezaEn(float px, float pz, float pang, float x, float y, float z, float sx, float sy, float sz, float r, float g, float b) {
+        float coseno = (float) Math.cos(pang); // Calcula el coseno de la orientación.
+        float seno = (float) Math.sin(pang); // Calcula el seno de la orientación.
+        float mundoX = px + coseno * x + seno * z; // Gira la posición local y suma la posición X.
+        float mundoZ = pz - seno * x + coseno * z; // Gira la posición local y suma la posición Z.
+        cajaGirada(mundoX, y, mundoZ, sx, sy, sz, r, g, b, pang); // Dibuja la pieza con su orientación.
     }
 
     /** Punto de entrada para ejecutar únicamente la segunda etapa. */
