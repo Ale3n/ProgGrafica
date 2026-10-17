@@ -11,6 +11,7 @@ public class decoracion extends iluminacion {
 
     // ==================== 1. ESTADO DEL JUEGO ====================
     private boolean mostrarMapa = true; // Muestra el minimapa desde el inicio.
+    private boolean mostrarHUD = true; // Alterna la visibilidad del HUD con la tecla K.
     private int entregas = 0; // Cuenta las entregas completadas; también identifica el siguiente destino.
     private float tiempo = 0; // Acumula los segundos de la partida hasta completar el recorrido.
     private static final float[][] DESTINOS = { // Cada fila contiene X y Z de una parada sobre la calle en el mapa 11x11.
@@ -61,23 +62,29 @@ public class decoracion extends iluminacion {
             float dz = destZ - z;
             float distancia = (float) Math.hypot(dx, dz);
 
-            if (distancia < 0.8f) { // Llegó a la esquina: pasar al siguiente tramo
-                x = destX;
-                z = destZ;
+            // Anticipa la esquina con distancia suficiente para describir una curva fluida (arco)
+            if (distancia < 3.2f) {
                 objetivoIdx = (objetivoIdx + 1) % ruta.length;
-                apuntarHaciaObjetivo();
-            } else {
-                // Rotación suave hacia el rumbo de la calle
-                float anguloDeseado = (float) Math.atan2(-dx, -dz);
-                float difAngulo = (float) Math.atan2(Math.sin(anguloDeseado - angulo), Math.cos(anguloDeseado - angulo));
-                angulo += difAngulo * Math.min(1.0f, 6.0f * deltaTime);
-
-                // Avance continuo a lo largo de la calzada
-                float frenteX = -(float) Math.sin(angulo);
-                float frenteZ = -(float) Math.cos(angulo);
-                x += frenteX * velocidad * deltaTime;
-                z += frenteZ * velocidad * deltaTime;
+                destX = ruta[objetivoIdx][0];
+                destZ = ruta[objetivoIdx][1];
+                dx = destX - x;
+                dz = destZ - z;
             }
+
+            // Rotación suave y progresiva hacia el rumbo de la nueva calle
+            float anguloDeseado = (float) Math.atan2(-dx, -dz);
+            float difAngulo = (float) Math.atan2(Math.sin(anguloDeseado - angulo), Math.cos(anguloDeseado - angulo));
+            angulo += difAngulo * Math.min(1.0f, 5.0f * deltaTime);
+
+            // Desaceleración realista en la curva (reduce hasta 40% de velocidad al doblar 90°)
+            float factorCurva = Math.min(1.0f, Math.abs(difAngulo) / 1.2f);
+            float velocidadCurva = velocidad * (1.0f - 0.40f * factorCurva);
+
+            // Avance continuo y orgánico a lo largo de la calzada
+            float frenteX = -(float) Math.sin(angulo);
+            float frenteZ = -(float) Math.cos(angulo);
+            x += frenteX * velocidadCurva * deltaTime;
+            z += frenteZ * velocidadCurva * deltaTime;
         }
     }
 
@@ -99,6 +106,9 @@ public class decoracion extends iluminacion {
         super.tecla(key); // Conserva salida, cámara, reinicio y luces.
         if (key == GLFW_KEY_M) { // Comprueba si se pulsó la tecla del mapa.
             mostrarMapa = !mostrarMapa; // Alterna entre mostrar y ocultar la vista superior.
+        }
+        if (key == GLFW_KEY_K) { // Comprueba si se pulsó la tecla del HUD.
+            mostrarHUD = !mostrarHUD; // Alterna entre mostrar y ocultar el HUD.
         }
     }
 
@@ -143,7 +153,7 @@ public class decoracion extends iluminacion {
     @Override // Amplía los indicadores de día/noche y faros de clase3.
     protected String estadoExtra() {
         String mensaje = super.estadoExtra(); // Recupera los indicadores de iluminación.
-        mensaje += " | M: mapa | "; // Muestra la tecla que alterna el minimapa.
+        mensaje += " | M: mapa | K: hud | "; // Muestra las teclas del minimapa y del HUD.
         if (entregas == DESTINOS.length) { // Selecciona el texto de victoria al completar las tres paradas.
             mensaje += "GANASTE en " + (int) tiempo + " s! R: jugar otra vez"; // Muestra tiempo final y opción de reinicio.
         } else { // Durante el recorrido muestra progreso e instrucciones.
@@ -336,7 +346,9 @@ public class decoracion extends iluminacion {
                 throw new IllegalStateException("Error OpenGL en minimapa"); // Expone el error en la consola.
             }
         }
-        dibujarHUD(); // Dibuja el panel dentro de la ventana: velocímetro, estado de luces y menú de pausa.
+        if (mostrarHUD || pausa) {
+            dibujarHUD(); // Dibuja el panel dentro de la ventana: velocímetro, estado de luces y menú de pausa.
+        }
     }
 
     /** Dibuja una marca cian y una punta blanca por encima de los edificios del minimapa. */
@@ -422,45 +434,47 @@ public class decoracion extends iluminacion {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glViewport(0, 0, ancho, alto); // Conecta la proyección a la ventana completa.
         try {
-            rect2D(-0.68f, -0.73f, 0.60f, 0.44f, 0.035f, 0.065f, 0.10f, 0.88f);
-            rect2D(-0.68f, -0.515f, 0.60f, 0.008f, 0.18f, 0.75f, 0.92f, 0.95f);
-            dibujarTexto("VELOCIDAD", -0.94f, -0.585f, 0.026f, 0.60f, 0.78f, 0.85f);
+            if (mostrarHUD) {
+                rect2D(-0.68f, -0.73f, 0.60f, 0.44f, 0.035f, 0.065f, 0.10f, 0.88f);
+                rect2D(-0.68f, -0.515f, 0.60f, 0.008f, 0.18f, 0.75f, 0.92f, 0.95f);
+                dibujarTexto("VELOCIDAD", -0.94f, -0.585f, 0.026f, 0.60f, 0.78f, 0.85f);
 
-            // Tacómetro gráfico: barra dinámica que crece y cambia de color según la aceleración
-            float fraccionVelocidad = Math.min(1.0f, Math.abs(velocidad) / 16.0f);
-            rect2D(-0.68f, -0.68f, 0.52f, 0.045f, 0.12f, 0.16f, 0.22f, 0.95f); // Fondo de la barra
-            if (fraccionVelocidad > 0.02f) {
-                rect2D(-0.94f + 0.26f * fraccionVelocidad, -0.68f, 0.52f * fraccionVelocidad, 0.035f,
-                    0.20f + 0.80f * fraccionVelocidad, 0.82f - 0.48f * fraccionVelocidad, 0.18f, 1.0f);
+                // Tacómetro gráfico: barra dinámica que crece y cambia de color según la aceleración
+                float fraccionVelocidad = Math.min(1.0f, Math.abs(velocidad) / 16.0f);
+                rect2D(-0.68f, -0.68f, 0.52f, 0.045f, 0.12f, 0.16f, 0.22f, 0.95f); // Fondo de la barra
+                if (fraccionVelocidad > 0.02f) {
+                    rect2D(-0.94f + 0.26f * fraccionVelocidad, -0.68f, 0.52f * fraccionVelocidad, 0.035f,
+                        0.20f + 0.80f * fraccionVelocidad, 0.82f - 0.48f * fraccionVelocidad, 0.18f, 1.0f);
+                }
+                // Marcas de nivel en el tacómetro (25%, 50%, 75%)
+                rect2D(-0.81f, -0.68f, 0.004f, 0.045f, 0.30f, 0.38f, 0.46f, 0.85f);
+                rect2D(-0.68f, -0.68f, 0.004f, 0.045f, 0.30f, 0.38f, 0.46f, 0.85f);
+                rect2D(-0.55f, -0.68f, 0.004f, 0.045f, 0.30f, 0.38f, 0.46f, 0.85f);
+
+                float rojoFaros = faros ? 1.0f : 0.35f;
+                float verdeFaros = faros ? 0.76f : 0.40f;
+                rect2D(-0.93f, -0.80f, 0.025f, 0.025f, rojoFaros, verdeFaros, 0.22f, 1.0f);
+                dibujarTexto(faros ? "FAROS ON" : "FAROS OFF", -0.90f, -0.81f, 0.022f,
+                    faros ? 0.96f : 0.62f, faros ? 0.82f : 0.67f, 0.52f);
+                rect2D(-0.62f, -0.80f, 0.025f, 0.025f, noche ? 0.35f : 0.98f, 0.75f, 0.30f, 1.0f);
+                dibujarTexto(noche ? "NOCHE" : "DIA", -0.59f, -0.81f, 0.022f, 0.82f, 0.87f, 0.94f);
+
+                dibujarTexto("ENTREGAS", -0.93f, -0.90f, 0.020f, 0.72f, 0.80f, 0.86f);
+                int totalDestinos = Math.max(1, DESTINOS.length);
+                float espacio = totalDestinos > 1 ? Math.min(0.075f, 0.18f / (totalDestinos - 1)) : 0.075f;
+                float anchoBloque = Math.min(0.052f, espacio * 0.72f);
+                for (int indice = 0; indice < totalDestinos; indice++) {
+                    float colorR = indice < entregas ? 0.18f : (indice == entregas ? 1.0f : 0.25f);
+                    float colorG = indice < entregas ? 0.88f : (indice == entregas ? 0.72f : 0.28f);
+                    float colorB = indice < entregas ? 0.35f : (indice == entregas ? 0.15f : 0.32f);
+                    rect2D(-0.57f + indice * espacio, -0.895f, anchoBloque, 0.025f,
+                        colorR, colorG, colorB, indice < entregas + 1 ? 0.95f : 0.60f);
+                }
+
+                rect2D(-0.80f, 0.91f, 0.32f, 0.06f, 0.06f, 0.10f, 0.16f, 0.88f);
+                rect2D(-0.80f, 0.882f, 0.32f, 0.005f, 0.18f, 0.75f, 0.95f, 0.95f);
+                dibujarTexto("P AYUDA", -0.92f, 0.90f, 0.022f, 0.70f, 0.88f, 0.94f);
             }
-            // Marcas de nivel en el tacómetro (25%, 50%, 75%)
-            rect2D(-0.81f, -0.68f, 0.004f, 0.045f, 0.30f, 0.38f, 0.46f, 0.85f);
-            rect2D(-0.68f, -0.68f, 0.004f, 0.045f, 0.30f, 0.38f, 0.46f, 0.85f);
-            rect2D(-0.55f, -0.68f, 0.004f, 0.045f, 0.30f, 0.38f, 0.46f, 0.85f);
-
-            float rojoFaros = faros ? 1.0f : 0.35f;
-            float verdeFaros = faros ? 0.76f : 0.40f;
-            rect2D(-0.93f, -0.80f, 0.025f, 0.025f, rojoFaros, verdeFaros, 0.22f, 1.0f);
-            dibujarTexto(faros ? "FAROS ON" : "FAROS OFF", -0.90f, -0.81f, 0.022f,
-                faros ? 0.96f : 0.62f, faros ? 0.82f : 0.67f, 0.52f);
-            rect2D(-0.62f, -0.80f, 0.025f, 0.025f, noche ? 0.35f : 0.98f, 0.75f, 0.30f, 1.0f);
-            dibujarTexto(noche ? "NOCHE" : "DIA", -0.59f, -0.81f, 0.022f, 0.82f, 0.87f, 0.94f);
-
-            dibujarTexto("ENTREGAS", -0.93f, -0.90f, 0.020f, 0.72f, 0.80f, 0.86f);
-            int totalDestinos = Math.max(1, DESTINOS.length);
-            float espacio = totalDestinos > 1 ? Math.min(0.075f, 0.18f / (totalDestinos - 1)) : 0.075f;
-            float anchoBloque = Math.min(0.052f, espacio * 0.72f);
-            for (int indice = 0; indice < totalDestinos; indice++) {
-                float colorR = indice < entregas ? 0.18f : (indice == entregas ? 1.0f : 0.25f);
-                float colorG = indice < entregas ? 0.88f : (indice == entregas ? 0.72f : 0.28f);
-                float colorB = indice < entregas ? 0.35f : (indice == entregas ? 0.15f : 0.32f);
-                rect2D(-0.57f + indice * espacio, -0.895f, anchoBloque, 0.025f,
-                    colorR, colorG, colorB, indice < entregas + 1 ? 0.95f : 0.60f);
-            }
-
-            rect2D(-0.80f, 0.91f, 0.32f, 0.06f, 0.06f, 0.10f, 0.16f, 0.88f);
-            rect2D(-0.80f, 0.882f, 0.32f, 0.005f, 0.18f, 0.75f, 0.95f, 0.95f);
-            dibujarTexto("P AYUDA", -0.92f, 0.90f, 0.022f, 0.70f, 0.88f, 0.94f);
 
             if (pausa) {
                 rect2D(0.0f, 0.0f, 2.0f, 2.0f, 0.0f, 0.0f, 0.0f, 0.68f);
@@ -475,7 +489,7 @@ public class decoracion extends iluminacion {
                 dibujarFilaControl(0.13f, "C", "CAMARA", 0.20f, 0.75f, 0.95f);
                 dibujarFilaControl(0.05f, "N", "DIA / NOCHE", 0.45f, 0.60f, 0.95f);
                 dibujarFilaControl(-0.03f, "F", "FAROS", 0.95f, 0.85f, 0.25f);
-                dibujarFilaControl(-0.11f, "M", "MINIMAPA", 0.20f, 0.85f, 0.70f);
+                dibujarFilaControl(-0.11f, "M / K", "MAPA / HUD", 0.20f, 0.85f, 0.70f);
                 dibujarFilaControl(-0.19f, "R", "REINICIAR", 0.90f, 0.25f, 0.25f);
                 dibujarFilaControl(-0.27f, "P / ESC", "REANUDAR / SALIR", 0.20f, 0.88f, 0.35f);
 

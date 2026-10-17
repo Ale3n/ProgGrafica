@@ -65,11 +65,11 @@ public class auto extends ciudad {
             acelerador -= 1; // Primero reduce la velocidad positiva y después entra en reversa.
         }
 
-        velocidad += acelerador * 12 * deltaTime; // Integra la aceleración de 9 unidades por segundo cuadrado.
+        velocidad += acelerador * 9 * deltaTime; // Integra la aceleración de 9 unidades por segundo cuadrado.
         float resistencia = 0.7f; // Define la pérdida de velocidad normal al rodar.
 
         if (pulsada(GLFW_KEY_SPACE)) { // Detecta si el usuario mantiene presionado el freno.
-            resistencia = 7; // Aumenta la pérdida de velocidad para detenerse rápidamente.
+            resistencia = 4; // Aumenta la pérdida de velocidad para detenerse rápidamente.
         }
 
         float factorFrenado = (float) Math.exp(-resistencia * deltaTime); // Calcula la fracción de velocidad conservada.
