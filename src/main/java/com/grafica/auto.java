@@ -10,11 +10,12 @@ public class auto extends ciudad {
 
     // ==================== 1. VARIABLES DEL AUTO ====================
     protected float autoX = -50; // Posición horizontal inicial: centro de la avenida suroeste.
-    protected float autoZ = 50; // Posición inicial sobre el eje sur de la ciudad ampliada.
+    protected float autoZ = 46; // Deja espacio para que la chata empiece dentro del mapa.
     protected float angulo = 0; // Orientación en radianes; cero apunta hacia -Z.
     protected float velocidad = 0; // Unidades por segundo; un valor negativo significa reversa.
     protected boolean camaraAerea = false; // false: seguir el auto; true: observar toda la ciudad.
     protected static final float RADIO_AUTO = 1f; // Radio que contiene al vehículo para las colisiones.
+    protected static final float RADIO_CHATA = 1f;
     protected boolean pausa = false; // true: congela la simulación y muestra menú de ayuda.
 
     // ==================== 2. TECLADO Y REINICIO ====================
@@ -40,7 +41,7 @@ public class auto extends ciudad {
     /** Coloca nuevamente el auto en su punto de partida. */
     protected void reiniciar() {
         autoX = -50; // Recupera la coordenada X de inicio (avenida suroeste).
-        autoZ = 50; // Recupera la coordenada Z de inicio.
+        autoZ = 46; // Recupera la coordenada Z de inicio.
         angulo = 0; // Orienta el frente hacia -Z.
         velocidad = 0; // Detiene cualquier movimiento previo.
     }
@@ -85,18 +86,25 @@ public class auto extends ciudad {
             direccion -= 1; // Selecciona el sentido negativo de rotación.
         }
 
-        angulo += direccion * velocidad * 0.11f * deltaTime; // Gira según la velocidad; en reversa invierte el giro.
-        float frenteX = -(float) Math.sin(angulo); // Obtiene la componente X del frente del vehículo.
-        float frenteZ = -(float) Math.cos(angulo); // Obtiene la componente Z; con ángulo cero vale -1.
+        float siguienteAngulo = angulo + direccion * velocidad * 0.11f * deltaTime;
+        float frenteX = -(float) Math.sin(siguienteAngulo); // Obtiene la componente X del frente del vehículo.
+        float frenteZ = -(float) Math.cos(siguienteAngulo); // Obtiene la componente Z; con ángulo cero vale -1.
         float siguienteX = autoX + frenteX * velocidad * deltaTime; // Propone la nueva posición X.
         float siguienteZ = autoZ + frenteZ * velocidad * deltaTime; // Propone la nueva posición Z.
+        float siguienteChataX = siguienteX + (float) Math.sin(siguienteAngulo) * 4;
+        float siguienteChataZ = siguienteZ + (float) Math.cos(siguienteAngulo) * 4;
 
-        if (puedeCircular(siguienteX, siguienteZ)) { // Comprueba la posición antes de mover el auto.
+        if (puedeCircular(siguienteX, siguienteZ)
+                && puedeCircular(siguienteChataX, siguienteChataZ, RADIO_CHATA)) {
             autoX = siguienteX; // Acepta el desplazamiento horizontal.
             autoZ = siguienteZ; // Acepta el desplazamiento en profundidad.
+            angulo = siguienteAngulo;
         } else { // La posición propuesta invadiría una manzana o saldría del mapa.
             velocidad = 0; // Detiene el auto conservando su última posición válida.
         }
+
+        
+
 
         actualizarTitulo(); // Muestra los controles y la velocidad actual.
     }
@@ -124,7 +132,11 @@ public class auto extends ciudad {
 
     /** Comprueba si el círculo del auto cabe en una posición sin tocar manzanas ni bordes. */
     protected boolean puedeCircular(float x, float z) {
-        float limitePermitido = LIMITE - RADIO_AUTO; // Reserva espacio para que el auto completo quede dentro.
+        return puedeCircular(x, z, RADIO_AUTO);
+    }
+
+    protected boolean puedeCircular(float x, float z, float radio) {
+        float limitePermitido = LIMITE - radio;
 
         if (Math.abs(x) > limitePermitido || Math.abs(z) > limitePermitido) { // Detecta salida por cualquier borde.
             return false; // Rechaza la posición exterior.
@@ -144,7 +156,7 @@ public class auto extends ciudad {
                 float distanciaZ = z - cercaZ; // Calcula la separación en profundidad al rectángulo.
                 float distanciaCuadrada = distanciaX * distanciaX + distanciaZ * distanciaZ; // Aplica Pitágoras sin raíz.
 
-                if (distanciaCuadrada < RADIO_AUTO * RADIO_AUTO) { // Comprueba si el círculo invade la manzana.
+                if (distanciaCuadrada < radio * radio) { // Comprueba si el círculo invade la manzana.
                     return false; // Rechaza el movimiento que produciría una colisión.
                 }
             }
@@ -179,9 +191,29 @@ public class auto extends ciudad {
         dibujarAuto(); // Añade el modelo del vehículo sobre la ciudad.
     }
 
+    protected void dibujarChataAuto(float px, float pz, float pang, float r, float g, float b, float cr, float cg, float cb) {
+        piezaEn(px, pz, pang, 0, 0.62f, 0, 2.1f, 0.3f, 2.8f, 0.38f, 0.2f, 0.08f);
+        for (float y : new float[] {0.82f}) {
+            piezaEn(px, pz, pang, -1.02f, y, 0, 0.14f, 0.22f, 2.8f, 0.48f, 0.28f, 0.12f);
+            piezaEn(px, pz, pang, 1.02f, y, 0, 0.14f, 0.22f, 2.8f, 0.48f, 0.28f, 0.12f);
+            //piezaEn(px, pz, pang, 0, y, -1.34f, 2.0f, 0.22f, 0.14f, 0.55f, 0.33f, 0.15f);
+            piezaEn(px, pz, pang, 0, y, -1.34f, 2.0f, 0.22f, 0.14f, 0.48f, 0.28f, 0.12f);
+            
+        }
+
+        piezaEn(px, pz, pang, 0, 0.48f, -2.05f, 0.16f, 0.16f, 1.8f, 0.3f, 0.3f, 0.3f);
+
+        for (float x : new float[] {-1.08f, 1.08f}) {
+            piezaEn(px, pz, pang, x, 0.36f, 0.2f, 0.24f, 0.58f, 0.68f, 0.07f, 0.07f, 0.07f);
+        }
+    }
+
     /** Construye el auto del jugador con carrocería roja y cabina azulada. */
     protected void dibujarAuto() {
         dibujarModeloVehiculo(autoX, autoZ, angulo, 0.95f, 0.24f, 0.12f, 0.22f, 0.65f, 0.78f);
+        float chataX = autoX + (float) Math.sin(angulo) * 4;
+        float chataZ = autoZ + (float) Math.cos(angulo) * 4;
+        dibujarChataAuto(chataX, chataZ, angulo, 0.95f, 0.24f, 0.12f, 0.22f, 0.65f, 0.78f);
     }
 
     /** Construye un modelo completo de vehículo con posición, orientación y colores configurables. */
@@ -223,4 +255,6 @@ public class auto extends ciudad {
         auto aplicacion = new auto(); // Crea la aplicación con ciudad y vehículo.
         aplicacion.run(); // Inicia la ventana y el ciclo de dibujo heredados.
     }
+    //piezaEn(px, pz, pang, 0, y, 1.34f, 2.0f, 0.22f, 0.14f, 0.55f, 0.33f, 0.15f);
+    //,1.06f 
 }
